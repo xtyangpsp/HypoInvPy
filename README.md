@@ -1,7 +1,7 @@
 # HypoInvPy
 *A Python interface for HypoInverse earthquake relocation software
 
-![plot1](/figs/hyinvpylogo.png)
+![plot1](/figs/hypoinvpylogo.png)
 
 This package is not intended to show documentation of how to use `hypoinverse`. Instead, we focus on buiding an user-friendly Python interface to run `hypoinverse`. For detailed documentation of `hypoinverse`, please read the documentation for hypoinverse in `hyp1.40/doc/hyp1.40.pdf`. The documentation for this interface package is in `doc/HypoInvPy_manual.pdf`.
 
