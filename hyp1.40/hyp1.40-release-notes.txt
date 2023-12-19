@@ -1,0 +1,25 @@
+Hypoinverse version 1.40 release notes. Sept 10, 2014.
+
+I compile and run hypoinverse on a Sun/Solaris workstation using g77 fortran. I have been told that gfortran also works, but I have not personally verified this. You can ignore warning messages about large common blocks. The makefile in the source directory is for my directory structure and uses g77. You will have to edit this file for your own situation. I can’t offer computer advice or help with other operating systems, and you may need to seek help from a computer specialist at your institution. If you get a running version on your platform, I can post the naked executable on this ftp site.
+
+The only change of hypo 1.40 compared to the previous 1.39 version is the optional ability to calculate earthquake depths relative to the geoid (sea level) for the traditional hypoinverse crustal models (CRT for gradient and CRH for layer). Earthquake depths for the hypoellipse models (CRE) are automatically referred to the geoid and there is no change for version 1.40, except that the CRE depth is labeled as a geoid depth. A new section on geoid depths is in the manual on page 24, which should be clearer than this brief summary.
+
+Hypoinverse 1.40 outputs some additional values. The “reported” depth (in the traditional depth field) can either be the model depth (below the CRT/CRH model surface) or the geoid depth, and an M or G letter indicates this. The depth of the earthquake below the geoid is also output. The level of the geoid within the hypoinverse CRT and CRH models is the depth datum, which is approximated by the average elevation of the 5 closest stations. The “depth datum” value in m above the geoid is also output. These values extend the summary line (also the header line of the archive file) by a few columns, which can be ignored if they are not needed. Additional values extend some lines in the print file too. No input formats were changed.
+
+A new GEO command selects whether to report the geoid or the model depth. The default is the model depth (CRT and CRH models) or the geoid depth for CRE models, just as before. Reporting geoid depths for CRT models will change all depths, and depths can now be negative for earthquakes above the geoid.
+
+Note there are as yet (6/2014)  no places in the AQMS data fields for these additional values. If the new hypoinverse 1.40 is installed in AQMS with geoid depths turned on, the geoid depth will be stored with no indication whether it is the geoid or model depth.
+
+A few sections of the manual were changed. In addition to the new section on page 24 of the manual and a new GEO command, the table of output summary values on page 111 is expanded, and a sample print output with the new values is on page 120.
+
+A new subroutine hydatum.for does the datum and depth calculations. Other subroutines were changed, and new entries are in the common area means the whole program must be recompiled.
+
+Fortran source code for the 1.40 version is in ftp://ehzftp.wr.usgs.gov/klein/hyp1.40/source
+
+Documentation (doc and pdf files) for the 1.40 version is in 
+ftp://ehzftp.wr.usgs.gov/klein/hyp1.40/doc
+
+Some stand-alone test files (input and ourput) are in
+ftp://ehzftp.wr.usgs.gov/klein/hyp1.40/testone
+
+

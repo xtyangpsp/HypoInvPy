@@ -1,0 +1,13 @@
+This directory contains testfiles for hypoinverse.  Output files were generated
+with version 1.40 on Fred Klein's sun-solaris computer on Aug 26, 2014. The test should run on any recent version (probably 1.2, certainly 1.3 or later) of hypoinverse.
+
+Run the test by running hypoinverse and typing @testone.hyp at the command prompt. I suggest reading this file first to see what is going on. The command file testone.hyp sets some default parameters and reads station, crust model and station delay files. It also reads the someone what complex standard gain (cal factor) and station correction files used in processing. These allow computing a realistic duration magnitude, but they are not needed to get a location.
+
+The command file illustrates the combined command file and interactive features of hypoinverse. Parameters are set and files read by commands. If a 3-letter command is given at the keyboard or in a command (.hyp) file, it prompts for what it needs. In this command file, files names are set then prompted for to display the names and allow changes. When the testone.hyp file ends, type loc at the command prompt to locate the earthquake.
+
+testone.phs - The input file of phase picks in archive format. This was output by a previous run of hypoinverse. Only some fields are read and many contain calulations from the previous run.
+
+Output files:
+testone.prt - The "print" file containing results in readable format.
+testone.sum - The summary file (one line per earthquake) in simple format.
+testone.arc - The archive output file, similar to the input file.
