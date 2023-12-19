@@ -1,5 +1,5 @@
 # HypoInvPy
-*A Python interface for HypoInverse earthquake relocation software
+*A Python interface for HypoInverse earthquake relocation software*
 
 ![plot1](/figs/hypoinvpylogo.png)
 
