@@ -8,7 +8,7 @@ include LICENSE.txt
 include setup.py
 
 # Include the data files
-recursive-include data *
+recursive-include templates *
 recursive-include example *
 recursive-include hyp1.40 *
 recursive-include figs *
