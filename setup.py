@@ -89,7 +89,7 @@ setup(
 
     packages=['hypoinvpy'],
     include_package_data = True,
-    package_data={"":["example","figs","doc"]},
+    #package_data={"":["example","figs","doc"]},
     # Specify which Python versions you support. In contrast to the
     # 'Programming Language' classifiers above, 'pip install' will check this
     # and refuse to install the project if the version does not match. See
