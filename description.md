@@ -13,12 +13,17 @@ $ conda create -n hypoinv -c conda-forge jupyter numpy scipy pandas python carto
 ```
 Then, activate the environment with: `$ conda activate hypoinv`
 
-2. Install the package with the parameters in `setup.py`.
+2. Clone the github repository, in terminal under the desired directory:
+```
+$ git clone https://github.com/xtyangpsp/HypoInvPy.git
+```
+
+3. `cd` to the repository folder in terminal and install the package with the parameters in `setup.py`.
 ```
 $ pip install .
 ```
 
-3. Create jupyter notebook kernel with the environment (after activating the environment).
+4. Create jupyter notebook kernel with the environment (after activating the environment).
 ```
 $ pip install --user ipykernel
 $ python -m ipykernel install --user --name=hypoinv
@@ -31,4 +36,7 @@ $ python -m ipykernel install --user --name=hypoinv
 
 ## Upcoming changes:
 * Add visualization functionalities, e.g., earthquake locations and depth distribution and temporal sequence, etc.
+
+
+
 
