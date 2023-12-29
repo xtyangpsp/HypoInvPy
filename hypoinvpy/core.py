@@ -208,7 +208,7 @@ def merge_summary(filelist,file_good,file_bad,lat_code,lon_code):
     fout_bad.close()
     fout_good.close()
 
-    print('Earthquakes are saved in: '+file_good+' and '+file_bad' for good and bad sources.')
+    print('Earthquakes are saved in: '+file_good+' and '+file_bad+' for good and bad sources.')
 #####
 #####
 class HypoInvConfig(object):
