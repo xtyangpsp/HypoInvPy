@@ -26,7 +26,7 @@ $ python -m ipykernel install --user --name=hypoinv
 
 ## Run the hypoinverse example:
 1. Make sure hypo1.40 has been installed on your computer. Download the version from the USGS website (https://www.usgs.gov/software/hypoinverse-earthquake-location). For your convinience, a copy of the hyp1.40 codes is available under folder `hyp1.40`.
-2. In terminal under the `example` directory, run the jupyter notebook `HypoInvPy_dev_tests.ipynb`
+2. In terminal under the `example` directory, run the jupyter notebook `HypoInvPy_run_example.ipynb`
 3. The output directory includes the resultant earthquake catalogs.
 
 ## Upcoming changes:
