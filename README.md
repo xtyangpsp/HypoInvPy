@@ -9,6 +9,12 @@ This package is not intended to show documentation of how to use `hypoinverse`. 
 The codes and workflow in this package are modified and simplified from Hypo-Interface-Py (https://github.com/YijianZhou/Hypo-Interface-Py). The hypoinverse version is 1.4 and can be downloaded from USGS (https://www.usgs.gov/software/hypoinverse-earthquake-location). 
 
 ## Installation
+### Install as a pip package
+HypoInvPy is available on pypl as a standalone package. It could be installed as regular pip package: `pip install hypoinvpy`. The latest version is always available on GitHub.
+
+### Install with local copy from GitHub
+This installation method will get the latest version from GitHub.
+
 1. Create and activate a Python virtual environment `hypoinv`. This is optional but recommended. This will help isolate the computational needs from other packages. This will also help avoid version incompatibility in case new packages for some codes are updated in the `base` conda environment. However, since `HypoInvPy` doesn't currently need complicated packages, running under the `base` environment may just work fine. 
 ```
 $ conda create -n hypoinv -c conda-forge jupyter numpy scipy pandas python cartopy obspy mpi4py
