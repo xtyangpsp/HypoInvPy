@@ -247,6 +247,76 @@ class HypoInvConfig(object):
         self.poisson = poisson #1.73 # provide smod or pos
 #
 #
+def conv_gamma(eventfilename='gamma_events.csv', pickfilename='gamma_picks.csv', removebad=True, separator=','):
+    #Function to convert picks from GaMMA associator to HypoInvPy format, based on gamma2hypoinverse.py in Weiqiang Zhu's QuakeFlow. (github.com/AI4EPS/QuakeFlow/HypoDD)
+
+    #Parameters:
+    #1. eventfilename: name of file which contains the events from GaMMA. Defaults to 'gamma_events.csv, which is the output file name from the GaMMA implementation from QuakeFlow above.
+    #2 pickfilename: name of file which contains the picks from GaMMA. Defaults to 'gamma_picks.csv, which is the output file name from the GaMMA implementation from QuakeFlow above.
+    #3 removebad: If true, this converter will check to ensure that every event has both P picks and S picks (events with only one or the other will cause HypoInverse to fail). Setting to False omits this check. Defaults to True as it is highly recommended.
+    #4 separator: line separator, defaults to ','.
+  picks=pd.read_csv(pickfile, sep=separator)
+  events=pd.read_csv(eventfile, sep=separator)
+
+  events["match_id"] = events["event_idx"]
+  picks["match_id"] = picks["event_idx"]
+
+  output_file=open("GaMMAConverted.arc", w)
+
+  picks_eventwise = picks.groupby("match_id").groups
+
+  for i in tqdm(events):
+    temporarybuffer = [] #don't add lines directly to file, catch here and check first
+    has_p = False
+    has_s = False
+
+    event = events.iloc[i]
+    event_time = datetime.strptime(event["time"], "%Y-%m-%dT:%H:%M:%S.%f").strftime("%Y-%m-%dT:%H:%M:%S.%f")[:-4]
+
+    lat_degree = int(event["latitude"])
+    lat_minute = (event["latitude"] - lat_degree) * 60 * 100
+    south = "S" if lat_degree <=0 else " "
+
+    lon_degree = int(event["longitude"])
+    lon_minute = (event["longitude"] - lon_degree) * 60 * 100
+    east = "E" if lat_degree >=0 else " "
+
+    depth = event["depth(km)"] #assume depth is in km.
+    event_line = f"{event_time}{abs(lat_degree):2d}{south}{abs(lat_minute):4.0f}{abs(lon_degree):3d}{east}{abs(lon_minute):4.0f}{depth:5.0f}" 
+    event_final = event_line + "\n"
+    temporarybuffer.append(event_final)
+
+    picks_idx = picks_eventwise[event["match_id"]]
+    for j in picks_idx:
+      pick = picks.iloc[j]
+      
+      network_code, station_code, comp_code, channel_code = pick['id'].split('.')
+      phase = pick['type']
+      phase_weight = min(max(int((1-pick['prob']) / (1 - 0.3) * 4) - 1, 0), 3)
+      picktime = datetime.strptime(pick['timestamp'], "%Y-m-%dT%H:%M:%S.%f")
+      pickmin = picktime.strftime("%Y%m%d%H%M")
+      picksec = pick_time.strftime("%S%f")[:-4]
+      templine = f"{station_code:<5}{network_code:<2} {comp_code:<1}{channel_code:<3}"
+
+      if phase.upper() == 'P':
+        has_p = True
+        pick_line = f"{templine:<13} P {phase_weight:<1d}{pickmin} {picksec}"
+      elif phase.upper == 'S':
+        has_s = True
+        pick_line = f"{templine:<13}   4{pickmin} {''<12}{picksec} S {phase_weight:<1d}"
+      else:
+        raise (f"Phase Type Error: {phase}")
+    
+      temporarybuffer.append(pick_line + "\n")
+    #add lines to file if there is both a P and S pick, or if filter is off.
+    if ( (has_p and has_s) or (not removebad) ):
+      for line in temporarybuffer:
+        outfile.write(line)
+      outfile.write("\n")
+    has_s = False
+    has_p = False
+    temporarybuffer = False
+      
 def run_hypoinv(parfilelist,hyp_bin='hyp1.40'):
     for fhyp in parfilelist:
         # 2. run hypoinverse
