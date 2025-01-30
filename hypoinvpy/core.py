@@ -2,56 +2,14 @@
 #Import needed packages first.
 import pandas as pd
 import os
-from datetime import datetime
 import numpy as np
 from hypoinvpy import utils
 import subprocess
-from tqdm import tqdm
 #
-def reformat_stainfo_bkp(infile,outfile, informat='csv',lat_code='N', lon_code='W'):
-    """
-    Reformat station information file for hypoinver run. Input CSV needs to have at least the following columns:
-    network,station,channel,latitude,longitude,elevation.
-
-    Additional columns will be ignored.
-    
-    ====== PARAMETERS =======
-    infile: input file name (including path).
-    outfile: output file name (including path).
-    informat: input file format, 'csv', or 'json'. Default is 'csv'.
-    lat_code: code for latitudes. Default is 'N'.
-    lon_code: code for longitudes. Default is 'W'. lat_code and lon_code are used to format the coordinates.
-    """
-
-    fout = open(outfile,'w')
-
-    if informat.lower() == 'csv':
-        done_list = []
-        f=open(infile); lines=f.readlines(); f.close()
-        for line in lines:
-            codes = line.split(',')
-            if codes[0] in done_list: continue
-            done_list.append(codes[0])
-            net, sta = codes[0].split('.')
-            lat, lon, ele = [float(code) for code in codes[1:4]]
-            lat, lon, ele = abs(lat), abs(lon), int(ele)
-            lat_deg = int(lat)
-            lat_min = 60*(lat-int(lat))
-            lon_deg = int(lon)
-            lon_min = 60*(lon-int(lon))
-            lat = '{:2} {:7.4f}{}'.format(lat_deg, lat_min, lat_code)
-            lon = '{:3} {:7.4f}{}'.format(lon_deg, lon_min, lon_code)
-            # hypoinverse format 2
-            fout.write("{:<5} {}  HHZ  {}{}{:4}\n".format(sta, net, lat, lon, ele))
-    elif informat.lower() == 'json':
-        raise ValueError('input file format of %s not ready yet.'%(informat))
-    else:
-        raise ValueError('input file format of %s not recoganized. Use "csv" or "json".'%(informat))
-    fout.close()
-    
 #
 def reformat_stainfo(infile,outfile, informat='csv',channel=True,channel_default='HHZ',
-                     force_channel_type=None,lat_code='N', lon_code='W',rename_component_dict=None):
+                     force_channel_type=None,lat_code='N', lon_code='W',rename_component_dict=None,
+                     ignore_component=False):
     """
     Reformat station information file for hypoinver run. Input CSV needs to have at least the following columns:
     network,station,channel,latitude,longitude,elevation.
@@ -61,13 +19,14 @@ def reformat_stainfo(infile,outfile, informat='csv',channel=True,channel_default
     ====== PARAMETERS =======
     infile: input file name (including path).
     outfile: output file name (including path).
-    informat: input file format, 'csv', or 'json'. Default is 'csv'.
+    informat: input file format, choose from 'csv', 'json', 'json-eqt','json-gamma'. Default is 'csv'.
     channel: is channel column available. Default is True. Otherwise, channel_default is used.
     channel_default: when channel is not available (channel=False), this value will be used. Default='HHZ'
     force_channel_type: treat all channel types (i.e., EH?, BH?, or HH?) as the same. Default=None (use true channel).
     rename_component_dict: dictionary used to rename component label, e.g., HH1 to HHN. Default is {'1':'N','2':'E'}
     lat_code: code for latitudes. Default is 'N'.
     lon_code: code for longitudes. Default is 'W'. lat_code and lon_code are used to format the coordinates.
+    ignore_component: if True, only save the channel type information, such as BH instead of BHZ. Default False.
     """
     if force_channel_type is not None:
         if len(force_channel_type) != 2:
@@ -76,14 +35,19 @@ def reformat_stainfo(infile,outfile, informat='csv',channel=True,channel_default
         if infile[-4:].lower() =='json':
             raise ValueError(infile+' may be a json file. change informat argument to json.')
         indata=pd.read_csv(infile)
-    elif informat.lower() == 'json':
+    elif informat.lower() == 'json' or informat.lower() == 'json-eqt':
         if infile[-3:].lower() =='csv':
             raise ValueError(infile+' may be a csv file. change informat argument to csv.')
         indata=utils.stainfo_json2csv(infile)
+    elif informat.lower() == 'json-gamma':
+        if infile[-3:].lower() =='csv':
+            raise ValueError(infile+' may be a csv file. change informat argument to csv.')
+        indata=utils.stainfo_json2csv(infile,informat='gamma')
     else:
         raise ValueError('input file format of %s not recoganized. Use "csv" or "json".'%(informat))
     #
-    rename_keys=list(rename_component_dict.keys())
+    if rename_component_dict is not None: 
+        rename_keys=list(rename_component_dict.keys())
 
     fhead=os.path.split(outfile)[0]
     if len(fhead)>0:
@@ -107,13 +71,15 @@ def reformat_stainfo(infile,outfile, informat='csv',channel=True,channel_default
         if rename_component_dict is not None: #force to rename component label.
             if chan[-1] in rename_keys:
                 chan=chan[0:2]+str(rename_component_dict[chan[-1]])
+        if ignore_component:
+            chan=chan[0:2] #drop the component information.
         # hypoinverse format 2
         fout.write("{:<5} {}  {}  {}{}{:4}\n".format(sta, net, chan,lat, lon, ele))
     fout.close()
 
 #
 #
-def generate_parfile(config,pardir='input',outdir='output',template=None):
+def generate_parfile(config,pardir='input',outdir='output',template=None,magline=None):
     """
     Generate parameter files for running hypoinverse, with given HypoInvConfig object.
 
@@ -121,10 +87,16 @@ def generate_parfile(config,pardir='input',outdir='output',template=None):
     config: A HypoInvConfig object containing all controling parameters.
     pardir: output directory to store the parameter files. Default: input.
     outdir: hypoinverse relocation output directory. Default: output.
+    template: provide template or use the built-in template file for parameters.
+    magline: the line in the parameter file to compute magnitude. Defalt is None.
 
     ========RETURNS===========
     filelist: list of the parameter files, including path.
     """
+    if not os.path.isdir(pardir):
+        os.makedirs(pardir)
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
     filelist=[]
     for ztr in config.ztrlist:
         # set control file
@@ -157,12 +129,23 @@ def generate_parfile(config,pardir='input',outdir='output',template=None):
             if line[0:3]=='ARC': 
                 line = "ARC '%s/%s-%s.arc' \n"%(outdir,config.run_tag, ztr) if config.get_arc else ''
             #if line[0:3]=='H71': line = "H71 1 1 3" #use hypoinverse summary output format (first integer)
+            if line[0:3]=='STO': 
+                continue
             fout.write(line)
+        #get magnitude
+        if magline is not None:
+            # line="MAG 1 T 1 1\n"
+            line = "MFL '%s/%s-%s.mag' \n"%(outdir,config.run_tag, ztr)
+            fout.write(line)
+            fout.write(magline)
+        line="STO" #stop the program.
+        fout.write(line)
+
         fout.close()
     #
     return filelist
 ####
-def merge_summary(filelist,file_good,file_bad,lat_code,lon_code):
+def merge_summary(filelist,file_good,file_bad,lat_code,lon_code,mag_dict=None):
     """
     Extract earthquake parameters based on final quality after merging all summary files.
 
@@ -170,7 +153,24 @@ def merge_summary(filelist,file_good,file_bad,lat_code,lon_code):
     filelist: summary file list from hypoinverse.
     file_good,file_bad: file names to store good and bad earthquakes.
     lat_code,lon_code: latitude and longitude codes.
+    mag_dict: magnitude dictionary in the form of {'id',mag} for all events. Default None (use hypoinverse output).
+            mag_dict could also be specified as a catalog file in csv format. E.g., the catalog from GAMMA.
     """
+    if mag_dict is not None:
+        if isinstance(mag_dict,str):
+            events=pd.read_csv(mag_dict)
+            mag_dict_use=dict()
+            for i in range(len(events.time)):
+                event = events.iloc[i]
+                # print(event['event_index'].astype(str))
+                mag_dict_use[event['event_index'].astype(str)] = event['magnitude']
+            #
+        elif isinstance(mag_dict,dict):
+            mag_dict_use = mag_dict
+        else:
+            raise ValueError('mag_dict is wrong in type. CSV catalog or dictionary.')
+    else:
+        mag_dict_use = mag_dict
     fout_bad = open(file_bad,'w')
     fout_good = open(file_good,'w')
     
@@ -203,9 +203,9 @@ def merge_summary(filelist,file_good,file_bad,lat_code,lon_code):
         # if no reliable loc
         if num_loc==0:
             sum_list_loc = sum_list
-            utils.write_csv(fout_bad, sum_list_loc[0]['line'], evid,lat_code,lon_code)
+            utils.write_csv(fout_bad, sum_list_loc[0]['line'], evid,lat_code,lon_code,mag_dict=mag_dict_use)
         else:
-            utils.write_csv(fout_good, sum_list_loc[0]['line'], evid,lat_code,lon_code)
+            utils.write_csv(fout_good, sum_list_loc[0]['line'], evid,lat_code,lon_code,mag_dict=mag_dict_use)
     
     fout_bad.close()
     fout_good.close()
@@ -247,79 +247,6 @@ class HypoInvConfig(object):
         self.pmodel = pmodel #'input/velo_p_eg.cre'
         self.smodel = smodel #[None, 'input/velo_s_eg.cre'][1]
         self.poisson = poisson #1.73 # provide smod or pos
-#
-#
-def conv_gamma(eventfile='gamma_events.csv', pickfile='gamma_picks.csv', removebad=True, separator=','):
-    """
-    Function to convert picks from GaMMA associator to HypoInvPy format, based on gamma2hypoinverse.py in Weiqiang Zhu's QuakeFlow. (github.com/AI4EPS/QuakeFlow/HypoDD)
-    
-    Parameters:
-    1. eventfile: name of file which contains the events from GaMMA. Defaults to 'gamma_events.csv, which is the output file name from the GaMMA implementation from QuakeFlow above.
-    2 pickfile: name of file which contains the picks from GaMMA. Defaults to 'gamma_picks.csv, which is the output file name from the GaMMA implementation from QuakeFlow above.
-    3 removebad: If true, this converter will check to ensure that every event has both P picks and S picks (events with only one or the other will cause HypoInverse to fail). Setting to False omits this check. Defaults to True as it is highly recommended.
-    4 separator: line separator, defaults to ','.
-    """
-    picks=pd.read_csv(pickfile, sep=separator)
-    events=pd.read_csv(eventfile, sep=separator)
-
-    events["match_id"] = events["event_idx"]
-    picks["match_id"] = picks["event_idx"]
-
-    outfile=open("GaMMAConverted.arc", 'w')
-
-    picks_eventwise = picks.groupby("match_id").groups
-
-    for i in tqdm(events):
-        temporarybuffer = [] #don't add lines directly to file, catch here and check first
-        has_p = False
-        has_s = False
-
-        event = events.iloc[i]
-        event_time = datetime.strptime(event["time"], "%Y-%m-%dT:%H:%M:%S.%f").strftime("%Y-%m-%dT:%H:%M:%S.%f")[:-4]
-
-        lat_degree = int(event["latitude"])
-        lat_minute = (event["latitude"] - lat_degree) * 60 * 100
-        south = "S" if lat_degree <=0 else " "
-
-        lon_degree = int(event["longitude"])
-        lon_minute = (event["longitude"] - lon_degree) * 60 * 100
-        east = "E" if lat_degree >=0 else " "
-
-        depth = event["depth(km)"] #assume depth is in km.
-        event_line = f"{event_time}{abs(lat_degree):2d}{south}{abs(lat_minute):4.0f}{abs(lon_degree):3d}{east}{abs(lon_minute):4.0f}{depth:5.0f}" 
-        event_final = event_line + "\n"
-        temporarybuffer.append(event_final)
-
-        picks_idx = picks_eventwise[event["match_id"]]
-        for j in picks_idx:
-            pick = picks.iloc[j]
-
-            network_code, station_code, comp_code, channel_code = pick['id'].split('.')
-            phase = pick['type']
-            phase_weight = min(max(int((1-pick['prob']) / (1 - 0.3) * 4) - 1, 0), 3)
-            picktime = datetime.strptime(pick['timestamp'], "%Y-m-%dT%H:%M:%S.%f")
-            pickmin = picktime.strftime("%Y%m%d%H%M")
-            picksec = picktime.strftime("%S%f")[:-4]
-            templine = f"{station_code:<5}{network_code:<2} {comp_code:<1}{channel_code:<3}"
-
-            if phase.upper() == 'P':
-                has_p = True
-                pick_line = f"{templine:<13} P {phase_weight:<1d}{pickmin} {picksec}"
-            elif phase.upper == 'S':
-                has_s = True
-                pick_line = f"{templine:<13}   4{pickmin} {''<12}{picksec} S {phase_weight:<1d}"
-            else:
-                raise (f"Phase Type Error: {phase}")
-
-            temporarybuffer.append(pick_line + "\n")
-    #add lines to file if there is both a P and S pick, or if filter is off.
-    if ( (has_p and has_s) or (not removebad) ):
-        for line in temporarybuffer:
-            outfile.write(line)
-            outfile.write("\n")
-    has_s = False
-    has_p = False
-    temporarybuffer = False
       
 def run_hypoinv(parfilelist,hyp_bin='hyp1.40'):
     for fhyp in parfilelist:

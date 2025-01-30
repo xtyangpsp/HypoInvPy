@@ -1,0 +1,11 @@
+v0.7.0:
+UTILS:
+1. Added station file converter from json to csv for gamma output format.
+2. Moved conv_gamma() here. Added magnitude and corrected for event id preservation.
+
+CORE:
+1. Improved reformat_stainfo() for use case of only channel type, without component information.
+    Added options to take input in json from EQT or GAMMA.
+2. Debugged conv_gamma() for phase data conversion and moved it to UTILS. 
+3. Added the option to specify magnitude dictionary when merging the summary files.
+4. generate_parfile(): Added option to calculate magnitude (not effective yet, need more debugging).
