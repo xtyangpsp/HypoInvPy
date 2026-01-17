@@ -206,7 +206,7 @@ def conv_gamma(eventfile, pickfile, outfile='phase_output.phs',outformat='Y2000'
 
         lon_degree = int(event["longitude"])
         lon_minute = (event["longitude"] - lon_degree) * 60 * 100
-        east = "E" if lat_degree >=0 else " "
+        east = "E" if lon_degree >=0 else " "
         event_mag = event["magnitude"]
         depth = event["depth(m)"] / 1000
         event_line = f"{event_time}{abs(lat_degree):2d}{south}{abs(lat_minute):4.0f}{abs(lon_degree):3d}{east}{abs(lon_minute):4.0f}{depth:5.0f}" 
