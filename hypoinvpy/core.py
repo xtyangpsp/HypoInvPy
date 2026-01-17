@@ -121,7 +121,7 @@ def generate_parfile(config,pardir='input',outdir='output',template=None,magline
             if line[0:3]=='PHS': line = "PHS '%s' \n"%config.phase_file
             if line[0:5]=='CRE 1': line = "CRE 1 '%s' %s T \n"%(config.pmodel, config.ref_ele)
             if line[0:5]=='CRE 2': line = "CRE 2 '%s' %s T \n"%(config.smodel, config.ref_ele)
-            if line[0:3]=='POS': line = "POS %s \n"%(config.pos)
+            if line[0:3]=='POS': line = "POS %s \n"%(config.poisson)
             if line[0:3]=='SUM': line = "SUM '%s/%s-%s.sum' \n"%(outdir,config.run_tag, ztr)
             if line[0:3]=='MIN': line = "MIN %d \n"%(config.min_nsta)
             if line[0:3]=='PRT': 
@@ -137,8 +137,10 @@ def generate_parfile(config,pardir='input',outdir='output',template=None,magline
             # line="MAG 1 T 1 1\n"
             line = "MFL '%s/%s-%s.mag' \n"%(outdir,config.run_tag, ztr)
             fout.write(line)
+            if magline[-1] != '\n':
+                magline += '\n'
             fout.write(magline)
-        line="STO" #stop the program.
+        line="STO\n" #stop the program.
         fout.write(line)
 
         fout.close()
